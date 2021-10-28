@@ -478,7 +478,7 @@ public class BluetoothSerialService {
 
         /**
          * Write to the connected OutStream.
-         * @param buffer  The bytes to write
+         * @param buffer  The Base64 image
          */
         public void write(byte[] buffer) {
             try {

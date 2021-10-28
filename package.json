@@ -20,8 +20,8 @@
     "ble",
     "ecosystem:cordova"
   ],
-  "author": "Don Coleman <don.coleman@gmail.com>",
-  "license": "Apache-2.0",
+  "author": "Malindu Gimhan <malindu.gimhan18@gmail.com>",
+  "license": "MIT License",
   "bugs": {
     "url": "https://github.com/Malindu22/BluetoothSerial/issues"
   },
