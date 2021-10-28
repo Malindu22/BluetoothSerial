@@ -1,0 +1,2 @@
+# BluetoothSerial
+ Ionic BluetoothSerial plugin
