@@ -19,6 +19,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 
+import android.widget.Toast;
+
 /**
  * This class does all the work for setting up and managing Bluetooth
  * connections with other devices. It has a thread that listens for
@@ -209,7 +211,7 @@ public class BluetoothSerialService {
      * @param out The bytes to write
      * @see ConnectedThread#write(byte[])
      */
-    public void write(String[] out) {
+    public void write(String out) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
@@ -478,39 +480,56 @@ public class BluetoothSerialService {
 
         /**
          * Write to the connected OutStream.
-         * @param buffer  The Base64 image
+         * @param buffer  The bytes to write
          */
-        public void write(byte[] buffer) {
+        public void write(String buffer) {
             try {
-                String  sig = buffer;
-                byte[] imageAsBytes = android.util.Base64.decode(sig, android.util.Base64.DEFAULT);
-                Bitmap btMap = BitmapFactory.decodeByteArray(imageAsBytes, 0,
-                    imageAsBytes.length);
-                char ESC_CHAR = 0x1B;
-                char GS = 0x1D;
-                byte[] LINE_FEED = new byte[]{0x0A};
-                byte[] CUT_PAPER = new byte[]{0x1D, 0x56, 0x00};
-                byte[] INIT_PRINTER = new byte[]{0x1B, 0x40};
-                byte[] SELECT_BIT_IMAGE_MODE = {0x1B, 0x2A, 33};
-                byte[] SET_LINE_SPACE_24 = new byte[]{0x1B, 0x33, 24};
-                MyNewClass zr = new MyNewClass();
-                int[][] pixels = zr.getPixelsSlow(btMap);
-                mmOutStream.write(SET_LINE_SPACE_24);
-                for (int y = 0; y < pixels.length; y += 24) {
-                    mmOutStream.write(SELECT_BIT_IMAGE_MODE);
-           
-                    mmOutStream.write(new byte[]{(byte)(0x00ff & pixels[y].length)
-                                        , (byte)((0xff00 & pixels[y].length) >> 8)});
-                    for (int x = 0; x < pixels[y].length; x++) {
-            
-                        mmOutStream.write(zr.recollectSlice(y, x, pixels));
-                    }
 
-            
-                        mmOutStream.write(LINE_FEED);
-                }
-                         mmOutStream.write(LINE_FEED);
-                         mmOutStream.write(LINE_FEED);
+                String  sig = buffer;
+            byte[] imageAsBytes = android.util.Base64.decode(sig, android.util.Base64.DEFAULT);
+
+
+            Bitmap btMap = BitmapFactory.decodeByteArray(imageAsBytes, 0,
+                    imageAsBytes.length);
+
+             char ESC_CHAR = 0x1B;
+             char GS = 0x1D;
+             byte[] LINE_FEED = new byte[]{0x0A};
+             byte[] CUT_PAPER = new byte[]{0x1D, 0x56, 0x00};
+             byte[] INIT_PRINTER = new byte[]{0x1B, 0x40};
+             byte[] SELECT_BIT_IMAGE_MODE = {0x1B, 0x2A, 33};
+             byte[] SET_LINE_SPACE_24 = new byte[]{0x1B, 0x33, 24};
+            //  mmOutStream.write(buffer);
+             Imake same = new Imake();
+             int[][] pixels = same.getPixelsSlow(btMap);
+             mmOutStream.write(SET_LINE_SPACE_24);
+            for (int y = 0; y < pixels.length; y += 24) {
+            // Like I said before, when done sending data,
+            // the printer will resume to normal text printing
+            mmOutStream.write(SELECT_BIT_IMAGE_MODE);
+            // Set nL and nH based on the width of the image
+            mmOutStream.write(new byte[]{(byte)(0x00ff & pixels[y].length)
+                                        , (byte)((0xff00 & pixels[y].length) >> 8)});
+            for (int x = 0; x < pixels[y].length; x++) {
+            // for each stripe, recollect 3 bytes (3 bytes = 24 bits)
+            mmOutStream.write(same.recollectSlice(y, x, pixels));
+            }
+
+            // Do a line feed, if not the printing will resume on the same line
+            mmOutStream.write(LINE_FEED);
+            }
+            // mmOutStream.write(SET_LINE_SPACE_30);
+
+            // Bitmap bitmapOrg = same.resizeImage(btMap, 384,
+            //         150);// Bit
+            // byte[] sendbuf = same.StartBmpToPrintCode(bitmapOrg, 0);
+
+            //     mmOutStream.write(sendbuf);
+            //     mmOutStream.flush();
+
+            mmOutStream.write(LINE_FEED);
+            mmOutStream.write(LINE_FEED);
+
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothSerial.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
 
@@ -528,27 +547,28 @@ public class BluetoothSerialService {
         }
     }
 
-    public class MyNewClass {
+    public class Imake {
+
         public byte[] recollectSlice(int y, int x, int[][] img) {
                 byte[] slices = new byte[] {0, 0, 0};
                 for (int yy = y, i = 0; yy < y + 24 && i < 3; yy += 8, i++) {
                     byte slice = 0;
-                    for (int b = 0; b < 8; b++) {
+            for (int b = 0; b < 8; b++) {
                         int yyy = yy + b;
-                        if (yyy >= img.length) {
-                            continue;
-                        }
-                        int col = img[yyy][x];
-                        boolean v = shouldPrintColor(col);
-                        slice |= (byte) ((v ? 1 : 0) << (7 - b));
-                    }
+                if (yyy >= img.length) {
+                    continue;
+                }
+                int col = img[yyy][x];
+                boolean v = shouldPrintColor(col);
+                slice |= (byte) ((v ? 1 : 0) << (7 - b));
+            }
                     slices[i] = slice;
                 }
 
                 return slices;
-        }
+            }
 
-        public boolean shouldPrintColor(int col) {
+            public boolean shouldPrintColor(int col) {
                 final int threshold = 127;
                 int a, r, g, b, luminance;
                 a = (col >> 24) & 0xff;
@@ -562,22 +582,22 @@ public class BluetoothSerialService {
                 luminance = (int) (0.299 * r + 0.587 * g + 0.114 * b);
 
                 return luminance < threshold;
-        }
+            }
 
         public int[][] getPixelsSlow(Bitmap image) {
                 int width = image.getWidth();
                 int height = image.getHeight();
                 int[][] result = new int[height][width];
                 for (int row = 0; row < height; row++) {
-                    for (int col = 0; col < width; col++) {
-                        result[row][col] = getRGB(image, col, row);
-                    }
+                for (int col = 0; col < width; col++) {
+                result[row][col] = getRGB(image, col, row);
                 }
+            }
 
-                return result;
+            return result;
         }
 
-        public int getRGB(Bitmap bmpOriginal, int col, int row) {
+            public int getRGB(Bitmap bmpOriginal, int col, int row) {
                     // get one pixel color
                     int pixel = bmpOriginal.getPixel(col, row);
                     // retrieve color of all channels
@@ -585,6 +605,124 @@ public class BluetoothSerialService {
                     int G = Color.green(pixel);
                     int B = Color.blue(pixel);
                     return Color.rgb(R, G, B);
+            }
+
+
+
+         public  Bitmap resizeImage(Bitmap bitmap, int w, int h) {
+            Bitmap BitmapOrg = bitmap;
+            int width = BitmapOrg.getWidth();
+            int height = BitmapOrg.getHeight();
+            int newWidth = w;
+            int newHeight = h;
+
+            float scaleWidth = ((float) newWidth) / width;
+            float scaleHeight = ((float) newHeight) / height;
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleWidth, scaleWidth);
+            Bitmap resizedBitmap = Bitmap.createBitmap(BitmapOrg, 10,10, width,
+                    height, matrix, true);
+            return resizedBitmap;
         }
+public  byte[] StartBmpToPrintCode(Bitmap bitmap, int t) {
+    byte temp = 0;
+    int j = 7;
+    int start = 0;
+    if (bitmap != null) {
+        int mWidth = bitmap.getWidth();
+        int mHeight = bitmap.getHeight();
+
+        int[] mIntArray = new int[mWidth * mHeight];
+        byte[] data = new byte[mWidth * mHeight];
+        bitmap.getPixels(mIntArray, 0, mWidth, 0, 0, mWidth, mHeight);
+        Imake mama  = new Imake();
+        mama.encodeYUV420SP(data, mIntArray, mWidth, mHeight, t);
+        byte[] result = new byte[mWidth * mHeight / 8];
+        for (int i = 0; i < mWidth * mHeight; i++) {
+            temp = (byte) ((byte) (data[i] << j) + temp);
+            j--;
+            if (j < 0) {
+                j = 7;
+            }
+            if (i % 8 == 7) {
+                result[start++] = temp;
+                temp = 0;
+            }
+        }
+        if (j != 7) {
+            result[start++] = temp;
+        }
+
+        int aHeight = 24 - mHeight % 24;
+        byte[] add = new byte[aHeight * 48];
+        byte[] nresult = new byte[mWidth * mHeight / 8 + aHeight * 48];
+        System.arraycopy(result, 0, nresult, 0, result.length);
+        System.arraycopy(add, 0, nresult, result.length, add.length);
+
+        byte[] byteContent = new byte[(mWidth / 8 + 4)
+                * (mHeight + aHeight)];// ´òÓ¡Êý×é
+        byte[] bytehead = new byte[4];// Ã¿ÐÐ´òÓ¡Í·
+        bytehead[0] = (byte) 0x1f;
+        bytehead[1] = (byte) 0x10;
+        bytehead[2] = (byte) (mWidth / 8);
+        bytehead[3] = (byte) 0x00;
+        for (int index = 0; index < mHeight + aHeight; index++) {
+            System.arraycopy(bytehead, 0, byteContent, index * 52, 4);
+            System.arraycopy(nresult, index * 48, byteContent,
+                    index * 52 + 4, 48);
+
+        }
+        return byteContent;
+    }
+    return null;
+
+}
+
+public  void encodeYUV420SP(byte[] yuv420sp, int[] rgba, int width,
+        int height, int t) {
+    final int frameSize = width * height;
+    int[] U, V;
+    U = new int[frameSize];
+    V = new int[frameSize];
+    final int uvwidth = width / 2;
+    int r, g, b, y, u, v;
+    int bits = 8;
+    int index = 0;
+    int f = 0;
+    for (int j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            r = (rgba[index] & 0xff000000) >> 24;
+            g = (rgba[index] & 0xff0000) >> 16;
+            b = (rgba[index] & 0xff00) >> 8;
+            // rgb to yuv
+            y = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
+            u = ((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128;
+            v = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
+            // clip y
+            // yuv420sp[index++] = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 :
+            // y));
+            byte temp = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 : y));
+            if (t == 0) {
+                yuv420sp[index++] = temp > 0 ? (byte) 1 : (byte) 0;
+            } else {
+                yuv420sp[index++] = temp > 0 ? (byte) 0 : (byte) 1;
+            }
+
+            // {
+            // if (f == 0) {
+            // yuv420sp[index++] = 0;
+            // f = 1;
+            // } else {
+            // yuv420sp[index++] = 1;
+            // f = 0;
+            // }
+
+            // }
+
+        }
+
+    }
+    f = 0;
+}
     }
 }
