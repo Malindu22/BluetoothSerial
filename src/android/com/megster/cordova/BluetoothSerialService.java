@@ -509,7 +509,8 @@ public class BluetoothSerialService {
             
                         mmOutStream.write(LINE_FEED);
                 }
-
+                         mmOutStream.write(LINE_FEED);
+                         mmOutStream.write(LINE_FEED);
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothSerial.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
 
