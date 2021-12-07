@@ -500,7 +500,7 @@ public class BluetoothSerialService {
              byte[] SELECT_BIT_IMAGE_MODE = {0x1B, 0x2A, 33};
              byte[] SET_LINE_SPACE_24 = new byte[]{0x1B, 0x33, 24};
             //  mmOutStream.write(buffer);
-             Imake same = new Imake();
+            // Imake same = new Imake();
              int[][] pixels = same.getPixelsSlow(btMap);
              mmOutStream.write(SET_LINE_SPACE_24);
             for (int y = 0; y < pixels.length; y += 24) {
@@ -527,8 +527,8 @@ public class BluetoothSerialService {
             //     mmOutStream.write(sendbuf);
             //     mmOutStream.flush();
 
-            mmOutStream.write(LINE_FEED);
-            mmOutStream.write(LINE_FEED);
+           // mmOutStream.write(LINE_FEED);
+           // mmOutStream.write(LINE_FEED);
 
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothSerial.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
