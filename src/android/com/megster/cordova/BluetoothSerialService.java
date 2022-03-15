@@ -210,8 +210,25 @@ public class BluetoothSerialService {
      * Write to the ConnectedThread in an unsynchronized manner
      * @param out The bytes to write
      * @see ConnectedThread#write(byte[])
+     * byte[]
      */
     public void write(String out) {
+        // Create temporary object
+        ConnectedThread r;
+        // Synchronize a copy of the ConnectedThread
+        synchronized (this) {
+            if (mState != STATE_CONNECTED) return;
+            r = mConnectedThread;
+        }
+        // Perform the write unsynchronized
+        r.write(out);
+    }
+    /**
+     * Write to the ConnectedThread in an unsynchronized manner
+     * @param out The bytes to write
+     * @see ConnectedThread#write(byte[])
+     */
+    public void image(String out) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
@@ -482,7 +499,7 @@ public class BluetoothSerialService {
          * Write to the connected OutStream.
          * @param buffer  The bytes to write
          */
-        public void write(String buffer) {
+        public void image(String buffer) {
             try {
 
                 String  sig = buffer;
@@ -537,6 +554,23 @@ public class BluetoothSerialService {
                 Log.e(TAG, "Exception during write", e);
             }
         }
+
+             /**
+         * Write to the connected OutStream.
+         * @param buffer  The bytes to write
+         */
+        public void write(byte[] buffer) {
+            try {
+                mmOutStream.write(buffer);
+
+                // Share the sent message back to the UI Activity
+                mHandler.obtainMessage(BluetoothSerial.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+
+            } catch (IOException e) {
+                Log.e(TAG, "Exception during write", e);
+            }
+        }
+        
 
         public void cancel() {
             try {
@@ -609,120 +643,120 @@ public class BluetoothSerialService {
 
 
 
-         public  Bitmap resizeImage(Bitmap bitmap, int w, int h) {
-            Bitmap BitmapOrg = bitmap;
-            int width = BitmapOrg.getWidth();
-            int height = BitmapOrg.getHeight();
-            int newWidth = w;
-            int newHeight = h;
+        //  public  Bitmap resizeImage(Bitmap bitmap, int w, int h) {
+        //     Bitmap BitmapOrg = bitmap;
+        //     int width = BitmapOrg.getWidth();
+        //     int height = BitmapOrg.getHeight();
+        //     int newWidth = w;
+        //     int newHeight = h;
 
-            float scaleWidth = ((float) newWidth) / width;
-            float scaleHeight = ((float) newHeight) / height;
-            Matrix matrix = new Matrix();
-            matrix.postScale(scaleWidth, scaleWidth);
-            Bitmap resizedBitmap = Bitmap.createBitmap(BitmapOrg, 10,10, width,
-                    height, matrix, true);
-            return resizedBitmap;
-        }
-public  byte[] StartBmpToPrintCode(Bitmap bitmap, int t) {
-    byte temp = 0;
-    int j = 7;
-    int start = 0;
-    if (bitmap != null) {
-        int mWidth = bitmap.getWidth();
-        int mHeight = bitmap.getHeight();
+        //     float scaleWidth = ((float) newWidth) / width;
+        //     float scaleHeight = ((float) newHeight) / height;
+        //     Matrix matrix = new Matrix();
+        //     matrix.postScale(scaleWidth, scaleWidth);
+        //     Bitmap resizedBitmap = Bitmap.createBitmap(BitmapOrg, 10,10, width,
+        //             height, matrix, true);
+        //     return resizedBitmap;
+        // }
+// public  byte[] StartBmpToPrintCode(Bitmap bitmap, int t) {
+//     byte temp = 0;
+//     int j = 7;
+//     int start = 0;
+//     if (bitmap != null) {
+//         int mWidth = bitmap.getWidth();
+//         int mHeight = bitmap.getHeight();
 
-        int[] mIntArray = new int[mWidth * mHeight];
-        byte[] data = new byte[mWidth * mHeight];
-        bitmap.getPixels(mIntArray, 0, mWidth, 0, 0, mWidth, mHeight);
-        Imake mama  = new Imake();
-        mama.encodeYUV420SP(data, mIntArray, mWidth, mHeight, t);
-        byte[] result = new byte[mWidth * mHeight / 8];
-        for (int i = 0; i < mWidth * mHeight; i++) {
-            temp = (byte) ((byte) (data[i] << j) + temp);
-            j--;
-            if (j < 0) {
-                j = 7;
-            }
-            if (i % 8 == 7) {
-                result[start++] = temp;
-                temp = 0;
-            }
-        }
-        if (j != 7) {
-            result[start++] = temp;
-        }
+//         int[] mIntArray = new int[mWidth * mHeight];
+//         byte[] data = new byte[mWidth * mHeight];
+//         bitmap.getPixels(mIntArray, 0, mWidth, 0, 0, mWidth, mHeight);
+//         Imake mama  = new Imake();
+//         mama.encodeYUV420SP(data, mIntArray, mWidth, mHeight, t);
+//         byte[] result = new byte[mWidth * mHeight / 8];
+//         for (int i = 0; i < mWidth * mHeight; i++) {
+//             temp = (byte) ((byte) (data[i] << j) + temp);
+//             j--;
+//             if (j < 0) {
+//                 j = 7;
+//             }
+//             if (i % 8 == 7) {
+//                 result[start++] = temp;
+//                 temp = 0;
+//             }
+//         }
+//         if (j != 7) {
+//             result[start++] = temp;
+//         }
 
-        int aHeight = 24 - mHeight % 24;
-        byte[] add = new byte[aHeight * 48];
-        byte[] nresult = new byte[mWidth * mHeight / 8 + aHeight * 48];
-        System.arraycopy(result, 0, nresult, 0, result.length);
-        System.arraycopy(add, 0, nresult, result.length, add.length);
+//         int aHeight = 24 - mHeight % 24;
+//         byte[] add = new byte[aHeight * 48];
+//         byte[] nresult = new byte[mWidth * mHeight / 8 + aHeight * 48];
+//         System.arraycopy(result, 0, nresult, 0, result.length);
+//         System.arraycopy(add, 0, nresult, result.length, add.length);
 
-        byte[] byteContent = new byte[(mWidth / 8 + 4)
-                * (mHeight + aHeight)];// ´òÓ¡Êý×é
-        byte[] bytehead = new byte[4];// Ã¿ÐÐ´òÓ¡Í·
-        bytehead[0] = (byte) 0x1f;
-        bytehead[1] = (byte) 0x10;
-        bytehead[2] = (byte) (mWidth / 8);
-        bytehead[3] = (byte) 0x00;
-        for (int index = 0; index < mHeight + aHeight; index++) {
-            System.arraycopy(bytehead, 0, byteContent, index * 52, 4);
-            System.arraycopy(nresult, index * 48, byteContent,
-                    index * 52 + 4, 48);
+//         byte[] byteContent = new byte[(mWidth / 8 + 4)
+//                 * (mHeight + aHeight)];// ´òÓ¡Êý×é
+//         byte[] bytehead = new byte[4];// Ã¿ÐÐ´òÓ¡Í·
+//         bytehead[0] = (byte) 0x1f;
+//         bytehead[1] = (byte) 0x10;
+//         bytehead[2] = (byte) (mWidth / 8);
+//         bytehead[3] = (byte) 0x00;
+//         for (int index = 0; index < mHeight + aHeight; index++) {
+//             System.arraycopy(bytehead, 0, byteContent, index * 52, 4);
+//             System.arraycopy(nresult, index * 48, byteContent,
+//                     index * 52 + 4, 48);
 
-        }
-        return byteContent;
-    }
-    return null;
+//         }
+//         return byteContent;
+//     }
+//     return null;
 
-}
+// }
 
-public  void encodeYUV420SP(byte[] yuv420sp, int[] rgba, int width,
-        int height, int t) {
-    final int frameSize = width * height;
-    int[] U, V;
-    U = new int[frameSize];
-    V = new int[frameSize];
-    final int uvwidth = width / 2;
-    int r, g, b, y, u, v;
-    int bits = 8;
-    int index = 0;
-    int f = 0;
-    for (int j = 0; j < height; j++) {
-        for (int i = 0; i < width; i++) {
-            r = (rgba[index] & 0xff000000) >> 24;
-            g = (rgba[index] & 0xff0000) >> 16;
-            b = (rgba[index] & 0xff00) >> 8;
-            // rgb to yuv
-            y = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
-            u = ((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128;
-            v = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
-            // clip y
-            // yuv420sp[index++] = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 :
-            // y));
-            byte temp = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 : y));
-            if (t == 0) {
-                yuv420sp[index++] = temp > 0 ? (byte) 1 : (byte) 0;
-            } else {
-                yuv420sp[index++] = temp > 0 ? (byte) 0 : (byte) 1;
-            }
+// public  void encodeYUV420SP(byte[] yuv420sp, int[] rgba, int width,
+//         int height, int t) {
+//     final int frameSize = width * height;
+//     int[] U, V;
+//     U = new int[frameSize];
+//     V = new int[frameSize];
+//     final int uvwidth = width / 2;
+//     int r, g, b, y, u, v;
+//     int bits = 8;
+//     int index = 0;
+//     int f = 0;
+//     for (int j = 0; j < height; j++) {
+//         for (int i = 0; i < width; i++) {
+//             r = (rgba[index] & 0xff000000) >> 24;
+//             g = (rgba[index] & 0xff0000) >> 16;
+//             b = (rgba[index] & 0xff00) >> 8;
+//             // rgb to yuv
+//             y = ((66 * r + 129 * g + 25 * b + 128) >> 8) + 16;
+//             u = ((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128;
+//             v = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128;
+//             // clip y
+//             // yuv420sp[index++] = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 :
+//             // y));
+//             byte temp = (byte) ((y < 0) ? 0 : ((y > 255) ? 255 : y));
+//             if (t == 0) {
+//                 yuv420sp[index++] = temp > 0 ? (byte) 1 : (byte) 0;
+//             } else {
+//                 yuv420sp[index++] = temp > 0 ? (byte) 0 : (byte) 1;
+//             }
 
-            // {
-            // if (f == 0) {
-            // yuv420sp[index++] = 0;
-            // f = 1;
-            // } else {
-            // yuv420sp[index++] = 1;
-            // f = 0;
-            // }
+//             // {
+//             // if (f == 0) {
+//             // yuv420sp[index++] = 0;
+//             // f = 1;
+//             // } else {
+//             // yuv420sp[index++] = 1;
+//             // f = 0;
+//             // }
 
-            // }
+//             // }
 
-        }
+//         }
 
-    }
-    f = 0;
-}
+//     }
+//     f = 0;
+// }
     }
 }
