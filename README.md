@@ -22,6 +22,5 @@ Function `write` data to the serial port. Data can be base64 Image.
 
     // image
     bluetoothSerial.write("base64:iVBORw0KGgoAAAANSUhEUgAAAQIAAAE0CAYAAADHbD3gAAAAAXNSR0I ....", success, failure);
-
    
     bluetoothSerial.write(data, success, failure);
