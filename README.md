@@ -1,15 +1,13 @@
 # BluetoothSerial
- This plugin based on <a href="https://github.com/don/BluetoothSerial">Ionic BluetoothSerial plugin</a> You can use All Method (except write method) in that plugin.
+ This plugin based on <a href="https://github.com/don/BluetoothSerial">Ionic BluetoothSerial plugin</a> You can use All Method in that plugin & I implement new method called image to print base64 image.
 
-## write
+## image
 
-Writes data to the serial port.
-
-    bluetoothSerial.write(data, success, failure);
+    bluetoothSerial.image(data, success, failure);
 
 ### Description
 
-Function `write` data to the serial port. Data can be base64 Image.
+Function `image` data to the serial port. Data can be base64 Image.
 
 
 ### Parameters
@@ -21,6 +19,5 @@ Function `write` data to the serial port. Data can be base64 Image.
 ### Quick Example
 
     // image
-    bluetoothSerial.write("base64:iVBORw0KGgoAAAANSUhEUgAAAQIAAAE0CAYAAADHbD3gAAAAAXNSR0I ....", success, failure);
+    bluetoothSerial.image("iVBORw0KGgoAAAANSUhEUgAAAQIAAAE0CAYAAADHbD3gAAAAAXNSR0I ....", success, failure);
    
-    bluetoothSerial.write(data, success, failure);
